@@ -1,0 +1,12 @@
+# Ignore the specific executable
+main.exe
+
+# Ignore object files (temporary compile files)
+*.o
+*.obj
+
+# Ignore VS Code local settings
+.vscode/
+
+# Ignore system thumbnails
+Thumbs.db
