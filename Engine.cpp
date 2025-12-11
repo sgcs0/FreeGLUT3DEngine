@@ -1,6 +1,4 @@
 #include "Engine.h"
-
-// --- ADDED GLM INCLUDES FOR LAB 07 COMPLIANCE ---
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -12,8 +10,16 @@ Engine::Engine() {
     height = 600;
     rotX = 0.0f; rotY = 0.0f; rotZ = 0.0f;
     bgR = 0.2f; bgG = 0.2f; bgB = 0.2f;
-    currentMode = 2; 
+    
+    // Ustawiamy startowy tryb na przyklad 1 z lab 9
+    currentMode = 11; 
     orthoMode = false; 
+    
+    // Inicjalizacja zmiennych animacji
+    animAlpha = 0.0f;
+    animBeta = 0.0f;
+    animAngle = 0.0f;
+
     instance = this;
 }
 
@@ -21,7 +27,7 @@ void Engine::init(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
     glutInitWindowSize(width, height);
-    glutCreateWindow("3D");
+    glutCreateWindow("Lab 09 - Transformacje");
 
     glutDisplayFunc(displayWrapper);
     glutReshapeFunc(reshapeWrapper);
@@ -31,18 +37,17 @@ void Engine::init(int argc, char** argv) {
 
     glEnable(GL_DEPTH_TEST);
 
-printf("--- STEROWANIE ---\n");
-    printf("[W/S] Pochylenie | [A/D] Odchylenie | [Q/E] Przechylenie \n");
-    printf("[P] Przelacz rzutowanie (Perspektywiczne/Ortogonalne - GLM)\n");
-    printf("[Przyciski myszki] Kolor tla\n\n");
-    printf("--- GLOWNE OBIEKTY ---\n");
-    printf("[1] Linia (Recznie)\n");
-    printf("[2] Szescian indeksowany (Recznie)\n");
-    printf("[3] Czworokat (Recznie)\n");
-    printf("[4] Walec (Proceduralny)\n");
-    printf("[5] Stozek (Proceduralny)\n");
-    printf("[6] Ostroslup (Proceduralny)\n");
-    printf("[7] Punkty, [8] Trojkaty, [9] Lamana, [0] Wachlarz\n");
+    printf("--- STEROWANIE LAB 09 ---\n");
+    printf("[Z] Przyklad 1\n");
+    printf("[X] Przyklad 2 (Uklad Sloneczny)\n");
+    printf("[C] Przyklad 3 (Animacja)\n");
+    printf("[V] Zadanie 3 (Transformowalny Szescian)\n");
+    printf("--- STEROWANIE KAMERA ---\n");
+    printf("[W/S] Przod / Tyl\n");
+    printf("[A/D] Lewo / Prawo\n");
+    printf("--- TRANSFORMACJE SZESCIANU (Tryb V) ---\n");
+    printf("[T] Przesun, [R] Obroc, [G] Skaluj\n");
+    printf("[1-0] Stare tryby\n");
 }
 
 void Engine::run() {
@@ -54,20 +59,33 @@ void Engine::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
-    // Camera setup
-    if (orthoMode) {
-        // No Z-translation needed for Ortho usually, just scaling to see the objects
-        glScalef(0.5f, 0.5f, 0.5f); 
-    } else {
-        glTranslatef(0.0f, 0.0f, -6.0f);
-    }
+    // --- ZADANIE 1: OBSLUGA KAMERY ---
+    // Pobieramy macierz widoku z naszej klasy Camera
+    glm::mat4 viewMatrix = camera.getViewMatrix();
+    // Ladujemy ja do OpenGL
+    glLoadMatrixf(glm::value_ptr(viewMatrix));
     
-    // Rotation
+    // Ewentualne dodatkowe rotacje calej sceny (ze starych labow)
     glRotatef(rotX, 1.0f, 0.0f, 0.0f);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
     glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
 
     switch (currentMode) {
+        // --- NOWE TRYBY LAB 09 ---
+        case 11: // Przyklad 1
+            labExamples.DrawExample1(); 
+            break;
+        case 12: // Przyklad 2
+            labExamples.DrawExample2(animAlpha, animBeta);
+            break;
+        case 13: // Przyklad 3
+            labExamples.DrawExample3(animAngle);
+            break;
+        case 14: // Zadanie 3 (Szescian)
+            myCube.draw();
+            break;
+
+        // --- STARE TRYBY ---
         case 1: glColor3f(1,1,0); manualShapes.DrawPrimitive(2); break;
         case 2: manualShapes.DrawIndexedCube(); break;
         case 3: glColor3f(0,1,1); manualShapes.DrawPrimitive(8); break;
@@ -84,37 +102,39 @@ void Engine::render() {
 }
 
 void Engine::update() {
+    // Aktualizacja animacji
+    animAlpha += 0.02f;
+    animBeta += 0.05f;
+    animAngle += 1.0f;
+    
     glutPostRedisplay();
     glutTimerFunc(16, timerWrapper, 0);
 }
 
-// --- UPDATED FOR GLM COMPLIANCE (Lab 07 Section 4 & 5) ---
 void Engine::reshape(int w, int h) {
     if (h == 0) h = 1;
+    width = w;
+    height = h;
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     
     float aspect = (float)w / h;
-    glm::mat4 projection; // Matrix to store the GLM result
-
+    
+    // Uzywamy GLM do macierzy projekcji (zgodnie z instrukcja)
+    glm::mat4 projection;
+    
     if (orthoMode) {
-        // Lab 07 Section 5.1: Use glm::ortho 
-        if (w >= h) {
-            projection = glm::ortho(-3.0f * aspect, 3.0f * aspect, -3.0f, 3.0f, -10.0f, 10.0f);
-        } else {
-            projection = glm::ortho(-3.0f, 3.0f, -3.0f / aspect, 3.0f / aspect, -10.0f, 10.0f);
-        }
+        if (w >= h)
+            projection = glm::ortho(-50.0f * aspect, 50.0f * aspect, -50.0f, 50.0f, -500.0f, 500.0f);
+        else
+            projection = glm::ortho(-50.0f, 50.0f, -50.0f / aspect, 50.0f / aspect, -500.0f, 500.0f);
     } else {
-        // Lab 07 Section 5.2: Use glm::perspective 
-        // Note: GLM takes FOV in Radians, unlike gluPerspective which takes Degrees.
-        // PDF suggests 60 degrees, previous code used 45. Using 45 here.
-        projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+        // Zwiekszylem zasieg widzenia (Far plane) do 500, zeby widziec przyklady
+        projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 500.0f);
     }
     
-    // Load the GLM matrix into OpenGL
     glLoadMatrixf(glm::value_ptr(projection));
-    
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -127,11 +147,27 @@ void Engine::handleMouse(int button, int state, int x, int y) {
 }
 
 void Engine::handleKeyboard(unsigned char key, int x, int y) {
+    float camSpeed = 2.0f;
+
     switch (key) {
-        case 'w': rotX -= 5.0f; break;
-        case 's': rotX += 5.0f; break;
-        case 'a': rotY -= 5.0f; break;
-        case 'd': rotY += 5.0f; break;
+        // Sterowanie kamera (WASD - bo wygodniej)
+        case 'w': camera.moveForward(camSpeed); break;
+        case 's': camera.moveBackward(camSpeed); break;
+        case 'a': camera.moveLeft(camSpeed); break;
+        case 'd': camera.moveRight(camSpeed); break;
+        
+        // Wybor trybow Lab 09
+        case 'z': currentMode = 11; break;
+        case 'x': currentMode = 12; break;
+        case 'c': currentMode = 13; break;
+        case 'v': currentMode = 14; myCube.reset(); break; // Reset kostki przy wejsciu
+        
+        // Transformacje kostki (Zadanie 3)
+        case 't': myCube.translate(5.0f, 0.0f, 0.0f); break; // Przesun w prawo
+        case 'r': myCube.rotate(15.0f, 0.0f, 1.0f, 0.0f); break; // Obroc wokol Y
+        case 'g': myCube.scale(1.1f); break; // Powieksz
+
+        // Stare skroty
         case 'q': rotZ -= 5.0f; break; 
         case 'e': rotZ += 5.0f; break; 
         case 'p': orthoMode = !orthoMode; reshape(width, height); break;
