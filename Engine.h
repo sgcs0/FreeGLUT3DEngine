@@ -8,18 +8,32 @@
 #include "ManualShapes.h"
 #include "ProceduralShapes.h"
 
+// --- NOWE PLIKI LAB 09 ---
+#include "Camera.h"
+#include "TransformableObject.h"
+#include "Lab09Examples.h"
+
 class Engine {
 private:
     int width, height;
-    float rotX, rotY, rotZ; // Z for Roll
+    float rotX, rotY, rotZ;
     float bgR, bgG, bgB;
     int currentMode; 
-    bool orthoMode; // Lab 07: Projection toggle
+    bool orthoMode; 
 
     SimpleShapes simpleShapes; 
     ManualShapes manualShapes;
     ProceduralShapes proceduralShapes;
     
+    // --- NOWE ZMIENNE LAB 09 ---
+    Camera camera;                  // Zadanie 1
+    TransformableCube myCube;       // Zadanie 3
+    Lab09Examples labExamples;      // Przyklady z PDF
+    
+    float animAlpha; // Do przykladu 2
+    float animBeta;  // Do przykladu 2
+    float animAngle; // Do przykladu 3
+
     static Engine* instance;
 
 public:
